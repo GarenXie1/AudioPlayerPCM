@@ -14,6 +14,8 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
 public class AudioPlayPcm implements Runnable{
 
@@ -52,6 +54,7 @@ public class AudioPlayPcm implements Runnable{
         byte[] bytes = new byte[minBufferSize + 100];
         int len = 0;
 
+        short[] shorts = new short[bytes.length/2];
 
         // recieveUDPCommand
         recieveUDPCommand();
@@ -66,13 +69,17 @@ public class AudioPlayPcm implements Runnable{
                 e.printStackTrace();
             }
 
+            // 把 byte 转化为 short
+            // to turn bytes to shorts as either big endian or little endian.
+            ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer().get(shorts);
+
             if(len == -1){
                 Log.w(TAG,"No more audio data can be read on PCM file.");
                 break;
             }
 
             // 把 音频数据 写入 AudioTrack 中.
-            mAudioTrack.write(bytes,0,len);
+            mAudioTrack.write(shorts,0,len/2);
 
         }
 
