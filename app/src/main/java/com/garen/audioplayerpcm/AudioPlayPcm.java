@@ -25,8 +25,10 @@ public class AudioPlayPcm implements Runnable{
     private static final int AudioPlayerChannelConfig = AudioFormat.CHANNEL_OUT_MONO;
     private static final int AudioPlayerStreamType = AudioManager.STREAM_RING;
     private static final int AudioPlayerMode = AudioTrack.MODE_STREAM;
-    private static final String playDir = "/storage/emulated/0/audioFile/";
+    private static final String playDir = "/data/";
     private static final String playFile = "data.pcm";
+    private static final String mySelfIPaddress = "192.168.1.174";
+    private static final int UDP_Port = 10086;
     private int minBufferSize = 0;
 
     private static String TAG = "AudioPlayPcm";
@@ -48,6 +50,8 @@ public class AudioPlayPcm implements Runnable{
             playFis = new FileInputStream(playDir + playFile);
         } catch (FileNotFoundException e) {
             e.printStackTrace();
+            Log.e(TAG,"open " + playDir + playFile + "--> failed.");
+            return;
         }
 
         // 创建 字节数组空间，用于存储从文件读取出来的音频数据.
@@ -57,8 +61,10 @@ public class AudioPlayPcm implements Runnable{
         short[] shorts = new short[bytes.length/2];
 
         // recieveUDPCommand
-        recieveUDPCommand();
-
+        if(recieveUDPCommand() != 0){
+            Log.e(TAG,"recieve UDP start command --> failed.");
+            return;
+        }
 
         while (isPlaying){
 
@@ -92,18 +98,20 @@ public class AudioPlayPcm implements Runnable{
 
     }
 
-    private void recieveUDPCommand(){
+    private int recieveUDPCommand(){
 
         InetAddress address = null;
         DatagramSocket ds = null;
         try {
             // 创建接收端的 Socket对象(DatagramSocket)
-            address = InetAddress.getByName("192.168.1.139");
-            ds = new DatagramSocket(10086,address);
+            address = InetAddress.getByName(mySelfIPaddress);
+            ds = new DatagramSocket(UDP_Port,address);
         } catch (UnknownHostException e) {
             e.printStackTrace();
+            return -1;
         } catch (SocketException e) {
             e.printStackTrace();
+            return -1;
         }
 
         // 创建一个数据包，用于接收数据
@@ -132,6 +140,7 @@ public class AudioPlayPcm implements Runnable{
         if(str.equals("start")){
             isPlaying = true;
         }
+        return 0;
     }
 
 
